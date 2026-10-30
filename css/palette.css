@@ -1,0 +1,23 @@
+:root{
+  --cream:      #fcfaf5;
+  --cream-2:    #ede9de;
+  --ink:        #3a3d32;
+  --ink-soft:   #4b4e42;
+  
+  --envelope-dark:  #6b7830;
+  --envelope-light: #7d8c3b;
+  
+  --sage:       #7b8854;
+  --sage-dark:  #4b5731;
+  --gold:       #a39376;
+  --purple:     #b1a5c4;
+  
+  --line:       rgba(75, 87, 49, 0.2);
+  --seal-dark:  #5c1311;
+  --seal-light: #8c2b28;
+
+  --serif: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+  --sans:  'Jost', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --ease: cubic-bezier(.22,1,.36,1);
+}

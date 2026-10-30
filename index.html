@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Isaac &amp; Blanca · 2 de octubre de 2027</title>
+<meta name="description" content="Nos casamos el 2 de octubre de 2027. Confirma tu asistencia.">
+<meta name="theme-color" content="#fcfaf5">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="css/palette.css">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="is-locked">
+
+<div class="intro" id="intro">
+  <div class="envelope" id="envelope" role="button" tabindex="0" aria-label="Abrir la invitación">
+    <div class="envelope__back"></div>
+    <div class="envelope__letter">
+      <p class="small">Nos casamos</p>
+      <p class="mono">Isaac &amp; Blanca</p>
+      <p class="small">02 · 10 · 2027</p>
+    </div>
+    <div class="envelope__front"></div>
+    <div class="envelope__flap"></div>
+    
+    <div class="envelope__floral envelope__floral--tr">
+      <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M100 20C120 40 130 60 120 80C110 100 80 110 60 90C40 70 50 40 100 20Z" fill="#f4f0e6"/>
+        <path d="M80 40C100 30 120 50 110 70C100 90 70 80 60 60C50 40 60 50 80 40Z" fill="#7d1f26"/>
+        <path d="M140 60C160 80 150 120 130 130C110 140 90 120 100 100C110 80 120 40 140 60Z" fill="#55613d"/>
+        <path d="M40 100C20 120 30 160 50 170C70 180 90 160 80 140C70 120 60 80 40 100Z" fill="#7b8854"/>
+        <path d="M160 140C180 150 180 180 160 190C140 200 120 180 130 160C140 140 140 130 160 140Z" fill="#f4f0e6"/>
+      </svg>
+    </div>
+    <div class="envelope__floral envelope__floral--bl">
+      <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M100 180C80 160 70 140 80 120C90 100 120 90 140 110C160 130 150 160 100 180Z" fill="#f4f0e6"/>
+        <path d="M120 160C100 170 80 150 90 130C100 110 130 120 140 140C150 160 140 150 120 160Z" fill="#7d1f26"/>
+        <path d="M60 140C40 120 50 80 70 70C90 60 110 80 100 100C90 120 80 160 60 140Z" fill="#55613d"/>
+        <path d="M160 100C180 80 170 40 150 30C130 20 110 40 120 60C130 80 140 120 160 100Z" fill="#7b8854"/>
+        <path d="M40 60C20 50 20 20 40 10C60 0 80 20 70 40C60 60 60 70 40 60Z" fill="#f4f0e6"/>
+      </svg>
+    </div>
+
+    <div class="envelope__seal">
+      <div class="envelope__seal-inner">I&amp;B</div>
+    </div>
+  </div>
+  <p class="intro__hint" id="introHint">Toca el sello para abrir</p>
+</div>
+
+<main class="invite" id="invite">
+  <div class="petals" id="petals" aria-hidden="true"></div>
+
+  <header class="hero">
+    <div class="hero__illustration">
+      <img src="img/villa-elisa.jpeg" alt="Acuarela de Villa Elisa">
+      <div class="hero__fade"></div>
+    </div>
+    
+    <div class="hero__content">
+      <p class="eyebrow">NOS CASAMOS</p>
+      <h1 class="hero__names">
+        <span>ISAAC</span>
+        <span class="hero__and">y</span>
+        <span>BLANCA</span>
+      </h1>
+      
+      <span class="divider-leaf" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 22C12 22 13 17 17 13C21 9 23 7 23 7C23 7 21 10 17 14C13 18 12 22 12 22Z" fill="var(--sage-dark)"/>
+          <path d="M12 22C12 22 11 17 7 13C3 9 1 7 1 7C1 7 3 10 7 14C11 18 12 22 12 22Z" fill="var(--sage)"/>
+          <path d="M12 22C12 22 12 17 12 13C12 9 12 6 12 6C12 6 11 9 11 13C11 17 12 22 12 22Z" fill="var(--sage-dark)"/>
+        </svg>
+      </span>
+
+      <p class="hero__date">SÁBADO, 2 DE OCTUBRE DE 2027</p>
+      <p class="hero__time">13:00 HRS</p>
+      <p class="hero__place">VILLA ELISA</p>
+      <p class="hero__address">Paseo Pilar Coloma, 6<br>12560 Benicàssim, Castellón</p>
+    </div>
+  </header>
+
+  <section class="section reveal" aria-labelledby="t-clock">
+    <h2 class="section__title" id="t-clock">Cuenta atrás</h2>
+    <p class="section__sub">Cada día que pasa falta uno menos para vernos.</p>
+    <div class="clock" id="clock" aria-live="off">
+      <div class="clock__item"><span class="clock__num" id="cd-d">—</span><span class="clock__label">Días</span></div>
+      <div class="clock__item"><span class="clock__num" id="cd-h">—</span><span class="clock__label">Horas</span></div>
+      <div class="clock__item"><span class="clock__num" id="cd-m">—</span><span class="clock__label">Min</span></div>
+      <div class="clock__item"><span class="clock__num" id="cd-s">—</span><span class="clock__label">Seg</span></div>
+    </div>
+  </section>
+
+  <section class="section reveal" aria-labelledby="t-details">
+    <h2 class="section__title" id="t-details">El gran día</h2>
+    <p class="section__sub">Todo lo que necesitas saber para acompañarnos.</p>
+
+    <div class="cards">
+      <article class="card">
+        <p class="card__icon" aria-hidden="true">
+          <img src="/img/svg/pajaros-del-amor.png" alt="Novios">
+        </p>
+        <h3>Ceremonia</h3>
+        <p>
+          <strong>13:00 h</strong><br>
+          Jardín de Villa Elisa<br>
+          Paseo Pilar Coloma, 6
+        </p>
+      </article>
+
+      <article class="card">
+        <p class="card__icon" aria-hidden="true">
+          <img src="/img/svg/copa-de-champan.png" alt="Celebración">
+        </p>
+        <h3>Celebración</h3>
+        <p>
+          <strong>14:30 h</strong><br>
+          Cóctel, comida y baile<br>
+          En el mismo recinto
+        </p>
+      </article>
+    </div>
+
+    <span class="divider-leaf" aria-hidden="true">
+    </span>
+
+    <a class="btn btn--ghost btn--sm" href="#" id="calendarBtn" target="_blank" rel="noopener">
+      Añadir al calendario
+    </a>
+  </section>
+
+  <section class="section reveal rsvp" id="rsvp" aria-labelledby="t-rsvp">
+    <h2 class="section__title" id="t-rsvp">Confirma tu asistencia</h2>
+    <p class="section__sub">
+      Nos encantaría saber si podrás acompañarnos.
+      Por favor, responde antes del <strong>1 de septiembre de 2027</strong>.
+    </p>
+
+    <form class="form" id="rsvpForm" novalidate>
+      <div class="field">
+        <label for="f-name">Nombre y apellidos *</label>
+        <input type="text" id="f-name" name="nombre" autocomplete="name" placeholder="Ej. María García López" required>
+        <p class="error" id="err-name" role="alert"></p>
+      </div>
+
+      <fieldset class="field">
+        <legend>¿Nos acompañas? *</legend>
+        <div class="choices" role="radiogroup" aria-describedby="err-attending">
+          <label class="choice">
+            <input type="radio" name="asistencia" value="si">
+            <span>Sí, allí estaré</span>
+          </label>
+          <label class="choice">
+            <input type="radio" name="asistencia" value="no">
+            <span>No podré asistir</span>
+          </label>
+        </div>
+        <p class="error" id="err-attending" role="alert"></p>
+      </fieldset>
+
+      <div class="only-if-yes" id="yesBlock" hidden>
+        <div class="field">
+          <label for="f-guests">Número de asistentes (incluyéndote)</label>
+          <select id="f-guests" name="acompanantes">
+            <option value="1">1 persona</option>
+            <option value="2">2 personas</option>
+            <option value="3">3 personas</option>
+            <option value="4">4 personas</option>
+            <option value="5">5 personas</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="f-allergies">Alergias o intolerancias</label>
+          <input type="text" id="f-allergies" name="alergias" placeholder="Ej. celiaquía, frutos secos…">
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="f-message">Un mensaje para los novios</label>
+        <textarea id="f-message" name="mensaje" rows="3" placeholder="Opcional, pero lo leeremos mil veces ♡"></textarea>
+      </div>
+
+      <button class="btn" type="submit" id="submitBtn">Enviar confirmación</button>
+    </form>
+
+    <div class="success" id="success" hidden>
+      <div class="success__icon" aria-hidden="true">✓</div>
+      <h3 id="successTitle">¡Gracias!</h3>
+      <p id="successText"></p>
+      <button class="btn btn--ghost btn--sm" type="button" id="editBtn">
+        Modificar mi respuesta
+      </button>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <p class="mono">Isaac &amp; Blanca</p>
+    <small>02 · 10 · 2027</small>
+  </footer>
+</main>
+
+<button class="music" id="musicBtn" type="button" aria-label="Activar o desactivar la música">
+  <span aria-hidden="true">♪</span>
+</button>
+<audio id="bgm" loop preload="none" src="musica.mp3"></audio>
+<canvas id="confetti-canvas" class="confetti-canvas"></canvas>
+
+<script src="script/script.js" defer></script>
+</body>
+</html>
