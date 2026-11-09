@@ -617,6 +617,13 @@ body.is-ready .invite {
   padding: 0;
 }
 
+.field__hint {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: .9rem;
+  line-height: 1.5;
+}
+
 fieldset.field {
   border: 0;
   margin: 0;
@@ -744,6 +751,40 @@ textarea:focus {
   animation: fadeUp .5s var(--ease);
 }
 
+.only-if-yes[hidden] {
+  display: none;
+}
+
+.attendees-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.attendee-menu {
+  display: grid;
+  gap: .75rem;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.45);
+}
+
+.attendee-menu__name {
+  margin: 0;
+  color: var(--ink);
+  font-size: .95rem;
+}
+
+.attendee-menu__field {
+  display: grid;
+  gap: .5rem;
+}
+
+.attendee-menu__field > label {
+  color: var(--ink-soft);
+  font-size: .8rem;
+}
+
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(10px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -758,6 +799,19 @@ textarea:focus {
 
 .error.is-visible {
   display: block;
+}
+
+.attendee-menu__status {
+  margin: 0;
+  line-height: 1.4;
+}
+
+.attendee-menu__status.error--success {
+  color: var(--sage);
+}
+
+.error.error--success {
+  color: var(--sage);
 }
 
 .is-invalid {

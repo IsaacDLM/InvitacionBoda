@@ -1,5 +1,7 @@
 const CONFIG = {
   weddingDate: '2027-10-02T13:00:00',
+  supabaseUrl: '',
+  supabaseAnonKey: '',
   calendar: {
     start: '20271002T110000Z',
     end: '20271002T200000Z',
@@ -7,7 +9,6 @@ const CONFIG = {
     location: 'Villa Elisa, Paseo Pilar Coloma, 6, 12560 Benicàssim, Castellón',
     details: '¡Nos casamos! Ceremonia a las 13:00 h. Confirma tu asistencia en la invitación.'
   },
-  endpoint: ''
 };
 
 (function initIntro() {
@@ -256,10 +257,221 @@ musicBtn.addEventListener('click', () => {
   const submitBtn = document.getElementById('submitBtn');
   const editBtn   = document.getElementById('editBtn');
   const nameInput = document.getElementById('f-name');
+  const guestsInput = document.getElementById('f-guests');
+  const attendeesList = document.getElementById('attendeesList');
+  const errAttendees = document.getElementById('err-attendees');
   const errName   = document.getElementById('err-name');
   const errAttend = document.getElementById('err-attending');
 
   const STORAGE_KEY = 'rsvp_boda_isaac_blanca';
+  const menuOptions = [
+    ['1', 'Paella valenciana'],
+    ['2', 'Arroz del señoret'],
+    ['3', 'Fidegua de marisco']
+  ];
+  const validationTimers = new WeakMap();
+  const validationSequences = new WeakMap();
+
+  function normalizeGuestName(name) {
+    return name
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim()
+      .replace(/\s+/g, ' ')
+      .toLocaleLowerCase('es');
+  }
+
+  function hasBackendConfig() {
+    return Boolean(CONFIG.supabaseUrl && CONFIG.supabaseAnonKey);
+  }
+
+  async function callGuestService(payload) {
+    if (!hasBackendConfig()) {
+      throw new Error('La validación de invitados aún no está configurada.');
+    }
+
+    const response = await fetch(`${CONFIG.supabaseUrl.replace(/\/+$/, '')}/functions/v1/guest-rsvp`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': CONFIG.supabaseAnonKey,
+        'Authorization': `Bearer ${CONFIG.supabaseAnonKey}`
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const result = await response.json();
+    if (!response.ok && response.status !== 409 && response.status !== 429) {
+      throw new Error(result.error || 'No se pudo contactar con el servicio de invitados.');
+    }
+    return result;
+  }
+
+  function getAttendeeName(row) {
+    if (row.dataset.primary === 'true') return nameInput.value.trim();
+    return row.querySelector('input')?.value.trim() || '';
+  }
+
+  function setAttendeeStatus(row, status, message) {
+    row.dataset.validation = status;
+    const statusText = row.querySelector('.attendee-menu__status');
+    statusText.textContent = message;
+    statusText.classList.toggle('error--success', status === 'available');
+    statusText.classList.toggle('is-visible', Boolean(message));
+    if (row.dataset.primary === 'true') {
+      errName.textContent = message;
+      errName.classList.toggle('error--success', status === 'available');
+      errName.classList.toggle('is-visible', Boolean(message));
+    }
+    const menuSelect = row.querySelector('select');
+    menuSelect.disabled = status !== 'available' || !form.querySelector('input[name="asistencia"]:checked[value="si"]');
+    if (status !== 'available' && status !== 'checking') menuSelect.value = '';
+  }
+
+  async function validateAttendee(row) {
+    const name = getAttendeeName(row);
+    const sequence = (validationSequences.get(row) || 0) + 1;
+    validationSequences.set(row, sequence);
+
+    if (name.length < 3) {
+      setAttendeeStatus(row, 'empty', '');
+      return;
+    }
+
+    setAttendeeStatus(row, 'checking', 'Comprobando invitado…');
+
+    const normalizedName = normalizeGuestName(name);
+    const duplicateRows = Array.from(attendeesList.querySelectorAll('.attendee-menu'))
+      .filter((otherRow) => otherRow !== row &&
+        normalizeGuestName(getAttendeeName(otherRow)) === normalizedName);
+    if (duplicateRows.length) {
+      [row, ...duplicateRows].forEach((duplicateRow) => {
+        setAttendeeStatus(duplicateRow, 'duplicate', 'Nombre repetido en esta respuesta');
+      });
+      return;
+    }
+
+    try {
+      const result = await callGuestService({ action: 'validate', nombre: name });
+      if (validationSequences.get(row) !== sequence || getAttendeeName(row) !== name) return;
+
+      if (result.status === 'available') {
+        setAttendeeStatus(row, 'available', 'Invitado validado');
+      } else if (result.status === 'registered') {
+        setAttendeeStatus(row, 'registered', 'Invitado ya registrado');
+      } else if (result.status === 'not_found') {
+        setAttendeeStatus(row, 'not_found', 'Invitado no encontrado');
+      } else if (result.status === 'rate_limited') {
+        setAttendeeStatus(row, 'error', 'Demasiadas consultas. Espera unos minutos e inténtalo de nuevo.');
+      } else {
+        setAttendeeStatus(row, 'error', 'No se pudo validar el invitado. Inténtalo de nuevo.');
+      }
+    } catch (error) {
+      console.error(error);
+      if (validationSequences.get(row) === sequence && getAttendeeName(row) === name) {
+        setAttendeeStatus(row, 'error', 'No se pudo validar el invitado. Comprueba tu conexión e inténtalo de nuevo.');
+      }
+    }
+  }
+
+  function scheduleAttendeeValidation(row) {
+    clearTimeout(validationTimers.get(row));
+    setAttendeeStatus(row, 'pending', '');
+    validationTimers.set(row, setTimeout(() => validateAttendee(row), 450));
+  }
+
+  function validateAllAttendees() {
+    attendeesList.querySelectorAll('.attendee-menu').forEach((row) => {
+      validateAttendee(row);
+    });
+  }
+
+  function renderAttendees(savedAttendees = []) {
+    const previous = Array.from(attendeesList.querySelectorAll('.attendee-menu')).map((row) => ({
+      nombre: row.querySelector('input')?.value || '',
+      menu: row.querySelector('select')?.value || ''
+    }));
+    const count = Number(guestsInput.value);
+    attendeesList.replaceChildren();
+
+    for (let index = 0; index < count; index += 1) {
+      const row = document.createElement('div');
+      row.className = 'attendee-menu';
+      row.dataset.primary = String(index === 0);
+
+      if (index === 0) {
+        const name = document.createElement('p');
+        name.className = 'attendee-menu__name';
+        name.dataset.attendeePrimaryName = '';
+        name.textContent = `Menú de ${nameInput.value.trim() || 'la persona invitada'}`;
+        row.append(name);
+      } else {
+        const nameField = document.createElement('div');
+        nameField.className = 'attendee-menu__field';
+
+        const label = document.createElement('label');
+        label.htmlFor = `f-companion-${index}`;
+        label.textContent = `Nombre de la persona ${index + 1} *`;
+
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.id = `f-companion-${index}`;
+        input.autocomplete = 'off';
+        input.placeholder = 'Nombre y apellidos';
+        input.required = true;
+        input.value = savedAttendees[index]?.nombre || previous[index]?.nombre || '';
+
+        nameField.append(label, input);
+        row.append(nameField);
+      }
+
+      const menuField = document.createElement('div');
+      menuField.className = 'attendee-menu__field';
+
+      const menuLabel = document.createElement('label');
+      menuLabel.htmlFor = `f-menu-${index}`;
+      menuLabel.textContent = 'Opción de menú *';
+
+      const menuSelect = document.createElement('select');
+      menuSelect.id = `f-menu-${index}`;
+      menuSelect.required = true;
+      menuSelect.disabled = true;
+
+      const placeholder = document.createElement('option');
+      placeholder.value = '';
+      placeholder.textContent = 'Elige una opción';
+      placeholder.disabled = true;
+      placeholder.selected = true;
+      menuSelect.append(placeholder);
+
+      menuOptions.forEach(([value, label]) => {
+        const option = document.createElement('option');
+        option.value = value;
+        option.textContent = label;
+        menuSelect.append(option);
+      });
+
+      menuSelect.value = savedAttendees[index]?.menu || previous[index]?.menu || '';
+      menuField.append(menuLabel, menuSelect);
+      row.append(menuField);
+
+      const status = document.createElement('p');
+      status.className = 'error attendee-menu__status';
+      status.setAttribute('role', 'status');
+      status.setAttribute('aria-live', 'polite');
+      row.append(status);
+      attendeesList.append(row);
+    }
+
+    updatePrimaryName();
+  }
+
+  function updatePrimaryName() {
+    const primaryName = attendeesList.querySelector('[data-attendee-primary-name]');
+    if (primaryName) {
+      primaryName.textContent = `Menú de ${nameInput.value.trim() || 'la persona invitada'}`;
+    }
+  }
 
   function updateConditional() {
     const checked = form.querySelector('input[name="asistencia"]:checked');
@@ -269,6 +481,15 @@ musicBtn.addEventListener('click', () => {
     yesBlock.querySelectorAll('input, select, textarea').forEach((el) => {
       el.disabled = !isYes;
     });
+    attendeesList.querySelectorAll('.attendee-menu').forEach((row) => {
+      row.querySelector('select').disabled = !isYes || row.dataset.validation !== 'available';
+    });
+    const primaryRow = attendeesList.querySelector('.attendee-menu[data-primary="true"]');
+    if (isYes) {
+      validateAllAttendees();
+    } else if (primaryRow) {
+      validateAttendee(primaryRow);
+    }
   }
 
   form.addEventListener('change', (e) => {
@@ -279,6 +500,41 @@ musicBtn.addEventListener('click', () => {
     if (e.target.id === 'f-name') {
       nameInput.classList.remove('is-invalid');
       errName.classList.remove('is-visible');
+      updatePrimaryName();
+    }
+    if (e.target.id === 'f-guests') {
+      renderAttendees();
+      errAttendees.classList.remove('is-visible');
+      updateConditional();
+    }
+    if (e.target.matches('#attendeesList input, #attendeesList select')) {
+      e.target.classList.remove('is-invalid');
+      e.target.removeAttribute('aria-invalid');
+      if (!attendeesList.querySelector('.is-invalid')) {
+        errAttendees.classList.remove('is-visible');
+      }
+    }
+    if (e.target.matches('#attendeesList select')) {
+      e.target.classList.remove('is-invalid');
+    }
+  });
+
+  form.addEventListener('input', (e) => {
+    if (e.target.id === 'f-name') updatePrimaryName();
+    if (e.target.id === 'f-name') {
+      const primaryRow = attendeesList.querySelector('.attendee-menu[data-primary="true"]');
+      if (primaryRow) scheduleAttendeeValidation(primaryRow);
+    }
+    if (e.target.matches('#attendeesList input')) {
+      e.target.classList.remove('is-invalid');
+      e.target.removeAttribute('aria-invalid');
+      if (!attendeesList.querySelector('.is-invalid')) {
+        errAttendees.classList.remove('is-visible');
+      }
+      scheduleAttendeeValidation(e.target.closest('.attendee-menu'));
+      attendeesList.querySelectorAll('.attendee-menu[data-validation="duplicate"]').forEach((row) => {
+        if (row !== e.target.closest('.attendee-menu')) scheduleAttendeeValidation(row);
+      });
     }
   });
 
@@ -305,6 +561,50 @@ musicBtn.addEventListener('click', () => {
       errAttend.classList.remove('is-visible');
     }
 
+    const checkedAttendance = attending && attending.value === 'si';
+    let attendeesValid = true;
+    let attendeeNeedsValidation = false;
+    const primaryRow = attendeesList.querySelector('.attendee-menu[data-primary="true"]');
+    const primaryValid = primaryRow?.dataset.validation === 'available';
+    if (attending && !primaryValid) {
+      nameInput.classList.add('is-invalid');
+      errName.textContent = primaryRow?.querySelector('.attendee-menu__status')?.textContent ||
+        'Valida tu nombre en la lista de invitados.';
+      errName.classList.add('is-visible');
+      attendeesValid = false;
+      attendeeNeedsValidation = true;
+    }
+
+    if (checkedAttendance) {
+      Array.from(attendeesList.querySelectorAll('.attendee-menu')).slice(1).forEach((row) => {
+        const attendeeNameInput = row.querySelector('input');
+        const nameIsValid = attendeeNameInput.value.trim().length >= 3 &&
+          row.dataset.validation === 'available';
+        attendeeNameInput.classList.toggle('is-invalid', !nameIsValid);
+        attendeeNameInput.toggleAttribute('aria-invalid', !nameIsValid);
+        if (!nameIsValid) {
+          attendeesValid = false;
+          attendeeNeedsValidation = true;
+        }
+
+        const menuSelect = row.querySelector('select');
+        const menuIsValid = Boolean(menuSelect.value) && !menuSelect.disabled;
+        menuSelect.classList.toggle('is-invalid', !menuIsValid);
+        menuSelect.toggleAttribute('aria-invalid', !menuIsValid);
+        if (!menuIsValid) attendeesValid = false;
+      });
+    }
+
+    if (!attendeesValid) {
+      errAttendees.textContent = attendeeNeedsValidation
+        ? 'Valida el nombre de cada asistente antes de elegir su menú.'
+        : 'Elige una opción de menú para cada asistente validado.';
+      errAttendees.classList.add('is-visible');
+      ok = false;
+    } else {
+      errAttendees.classList.remove('is-visible');
+    }
+
     if (!ok) {
       const firstError = form.querySelector('.is-invalid, .error.is-visible');
       if (firstError) firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -317,12 +617,26 @@ musicBtn.addEventListener('click', () => {
     const fd = new FormData(form);
     const attending = fd.get('asistencia');
     const isYes = attending === 'si';
+    const nombre = (fd.get('nombre') || '').toString().trim();
+    const invitados = isYes
+      ? [
+          {
+            nombre,
+            menu: attendeesList.querySelector('#f-menu-0').value
+          },
+          ...Array.from(attendeesList.querySelectorAll('.attendee-menu')).slice(1).map((row) => ({
+            nombre: row.querySelector('input').value.trim(),
+            menu: row.querySelector('select').value
+          }))
+        ]
+      : [];
 
     return {
-      nombre: (fd.get('nombre') || '').toString().trim(),
+      nombre,
       asistencia: isYes ? 'Sí' : 'No',
       acompanantes: isYes ? Number(fd.get('acompanantes') || 1) : 0,
-      menu: isYes ? (fd.get('menu') || '') : '',
+      menu: invitados[0]?.menu || '',
+      invitados,
       alergias: isYes ? (fd.get('alergias') || '').toString().trim() : '',
       autobus: isYes && fd.get('autobus') === 'si' ? 'Sí' : 'No',
       mensaje: (fd.get('mensaje') || '').toString().trim(),
@@ -331,23 +645,10 @@ musicBtn.addEventListener('click', () => {
   }
 
   async function send(data) {
-    if (!CONFIG.endpoint) {
-      console.info('[Demo] Confirmación registrada:', data);
-      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (e) {}
-      await new Promise((r) => setTimeout(r, 800));
-      return { ok: true };
-    }
-
-    const res = await fetch(CONFIG.endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      body: JSON.stringify(data)
-    });
-
-    if (res.ok) {
-      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (e) {}
-    }
-    return { ok: res.ok };
+    const result = await callGuestService({ action: 'submit', respuesta: data });
+    if (result.status !== 'ok') return { ok: false, result };
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (e) {}
+    return { ok: true };
   }
 
   form.addEventListener('submit', async (e) => {
@@ -362,7 +663,32 @@ musicBtn.addEventListener('click', () => {
     try {
       const result = await send(data);
 
-      if (!result.ok) throw new Error('Respuesta no válida del servidor');
+      if (!result.ok) {
+        const status = result.result?.status;
+        if (status === 'not_found' || status === 'registered') {
+          const invalidName = result.result.nombre || '';
+          const invalidKey = normalizeGuestName(invalidName);
+          const row = Array.from(attendeesList.querySelectorAll('.attendee-menu'))
+            .find((attendeeRow) => normalizeGuestName(getAttendeeName(attendeeRow)) === invalidKey);
+          if (row) {
+            setAttendeeStatus(
+              row,
+              status,
+              status === 'registered' ? 'Invitado ya registrado' : 'Invitado no encontrado'
+            );
+          }
+          throw new Error(status === 'registered'
+            ? 'Uno de los invitados ya fue registrado por otra persona.'
+            : 'Uno de los invitados no aparece en la lista.');
+        }
+        if (status === 'duplicate') {
+          throw new Error('No repitas el nombre de una persona en la lista de asistentes.');
+        }
+        if (status === 'rate_limited') {
+          throw new Error('Demasiadas consultas. Espera unos minutos e inténtalo de nuevo.');
+        }
+        throw new Error(result.result?.message || 'No se pudo registrar la respuesta.');
+      }
 
       const firstName = data.nombre.split(' ')[0];
 
@@ -388,7 +714,7 @@ musicBtn.addEventListener('click', () => {
       console.error(err);
       submitBtn.disabled = false;
       submitBtn.textContent = 'Enviar confirmación';
-      alert('No hemos podido enviar tu respuesta. Revisa tu conexión e inténtalo de nuevo.');
+      alert(err.message || 'No hemos podido enviar tu respuesta. Revisa tu conexión e inténtalo de nuevo.');
     }
   });
 
@@ -406,9 +732,16 @@ musicBtn.addEventListener('click', () => {
       nameInput.value = saved.nombre || '';
       const radio = form.querySelector(`input[name="asistencia"][value="${saved.asistencia === 'Sí' ? 'si' : 'no'}"]`);
       if (radio) radio.checked = true;
+      if (saved.acompanantes >= 1 && saved.acompanantes <= 5) {
+        guestsInput.value = String(saved.acompanantes);
+      }
+      renderAttendees(Array.isArray(saved.invitados)
+        ? saved.invitados
+        : [{ nombre: saved.nombre, menu: saved.menu }]);
       updateConditional();
     }
   } catch (e) {}
 
+  renderAttendees();
   updateConditional();
 })();

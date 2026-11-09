@@ -1,0 +1,2 @@
+[functions.guest-rsvp]
+verify_jwt = false
